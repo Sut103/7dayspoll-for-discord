@@ -8,14 +8,18 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func Register(session *discordgo.Session) error {
-	log.Printf("Registering commands...\n")
-	commands := []*discordgo.ApplicationCommand{
+// commandsToRegister returns the application commands this bot registers.
+func commandsToRegister() []*discordgo.ApplicationCommand {
+	return []*discordgo.ApplicationCommand{
 		poll.GetNativePollCommand(),
 		poll.GetClassicPollCommand(),
 	}
-	for _, command := range commands {
-		_, err := session.ApplicationCommandCreate(session.State.User.ID, "", command)
+}
+
+func Register(session commandSession, appID string) error {
+	log.Printf("Registering commands...\n")
+	for _, command := range commandsToRegister() {
+		_, err := session.ApplicationCommandCreate(appID, "", command)
 		if err != nil {
 			return err
 		}
@@ -24,9 +28,9 @@ func Register(session *discordgo.Session) error {
 	return nil
 }
 
-func Delete(session *discordgo.Session) error {
+func Delete(session commandSession, appID string) error {
 	log.Printf("Deleting registered commands...\n")
-	commands, err := session.ApplicationCommands(session.State.User.ID, "")
+	commands, err := session.ApplicationCommands(appID, "")
 	if err != nil {
 		return err
 	}
@@ -37,7 +41,7 @@ func Delete(session *discordgo.Session) error {
 	}
 
 	for _, command := range commands {
-		err := session.ApplicationCommandDelete(session.State.User.ID, "", command.ID)
+		err := session.ApplicationCommandDelete(appID, "", command.ID)
 		if err != nil {
 			return err
 		}

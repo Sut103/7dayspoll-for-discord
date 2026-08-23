@@ -22,15 +22,36 @@ func NewBot(token string) *Bot {
 	}
 }
 
+type commandKind int
+
+const (
+	commandUnknown commandKind = iota
+	commandNativePoll
+	commandClassicPoll
+)
+
+// resolveCommandKind maps an application command's name to the kind of poll
+// command it is, or commandUnknown for a name this bot doesn't handle.
+func resolveCommandKind(name string) commandKind {
+	switch name {
+	case "poll":
+		return commandNativePoll
+	case "poll-classic":
+		return commandClassicPoll
+	default:
+		return commandUnknown
+	}
+}
+
 func botHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if i.Type != discordgo.InteractionApplicationCommand {
 		return
 	}
 	var err error
-	switch i.ApplicationCommandData().Name {
-	case "poll":
+	switch resolveCommandKind(i.ApplicationCommandData().Name) {
+	case commandNativePoll:
 		err = poll.NativePoll(s, i.Interaction)
-	case "poll-classic":
+	case commandClassicPoll:
 		err = poll.ClassicPoll(s, i.Interaction)
 	default:
 		return
@@ -72,7 +93,7 @@ func (b *Bot) Run() error {
 	}
 	defer s.Close()
 
-	manage.Register(s)
+	manage.Register(s, s.State.User.ID)
 
 	log.Println("=====start=====")
 	signalChan := make(chan os.Signal, 1)
