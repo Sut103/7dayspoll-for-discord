@@ -173,13 +173,17 @@ func clampPollDurationToEvent(durationHours int, eventStart, now time.Time) int 
 	return durationHours
 }
 
-func createScheduledEvent(session *discordgo.Session, guildID string, i18n I18n, start time.Time, numDays int, title string, messageURL string, eventStart time.Time) (*discordgo.GuildScheduledEvent, error) {
+// buildGuildScheduledEventParams builds the parameters for the guild
+// scheduled event linked to a poll: it runs from eventStart through the end
+// of the final candidate day, and links back to the poll message via
+// messageURL.
+func buildGuildScheduledEventParams(i18n I18n, start time.Time, numDays int, title string, messageURL string, eventStart time.Time) *discordgo.GuildScheduledEventParams {
 	eventTitle := truncateRunes(i18n.VotingPeriod+title, discordEventNameMaxLength)
 
 	finalCandidateDayMidnight := eventStartTime(start, numDays)
 	endTime := time.Date(finalCandidateDayMidnight.Year(), finalCandidateDayMidnight.Month(), finalCandidateDayMidnight.Day(), 23, 59, 59, 0, start.Location())
 
-	eventParams := &discordgo.GuildScheduledEventParams{
+	return &discordgo.GuildScheduledEventParams{
 		Name:               eventTitle,
 		Description:        fmt.Sprintf("%s: %s", i18n.PollMessage, messageURL),
 		ScheduledStartTime: &eventStart,
@@ -190,6 +194,9 @@ func createScheduledEvent(session *discordgo.Session, guildID string, i18n I18n,
 			Location: messageURL,
 		},
 	}
+}
 
+func createScheduledEvent(session pollSession, guildID string, i18n I18n, start time.Time, numDays int, title string, messageURL string, eventStart time.Time) (*discordgo.GuildScheduledEvent, error) {
+	eventParams := buildGuildScheduledEventParams(i18n, start, numDays, title, messageURL, eventStart)
 	return session.GuildScheduledEventCreate(guildID, eventParams)
 }

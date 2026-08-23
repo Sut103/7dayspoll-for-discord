@@ -56,15 +56,12 @@ func GetNativePollCommand() *discordgo.ApplicationCommand {
 	}
 }
 
-func NativePoll(session *discordgo.Session, interaction *discordgo.Interaction) error {
-	i18n := GetI18n(interaction.Locale)
-	now := time.Now()
-	opts, err := parsePollOptions(interaction, i18n, now)
-	if err != nil {
-		return err
-	}
+// resolveDurationHours returns the poll's duration in hours, from the
+// "duration" option (default defaultDurationDays, clamped to
+// [minDurationDays, maxDurationDays] days).
+func resolveDurationHours(optMap map[string]*discordgo.ApplicationCommandInteractionDataOption) int {
 	durationDays := defaultDurationDays
-	if d, ok := opts.OptMap["duration"]; ok {
+	if d, ok := optMap["duration"]; ok {
 		durationDays = int(d.IntValue())
 		if durationDays < minDurationDays {
 			durationDays = minDurationDays
@@ -72,7 +69,12 @@ func NativePoll(session *discordgo.Session, interaction *discordgo.Interaction) 
 			durationDays = maxDurationDays
 		}
 	}
-	choices := getChoices(i18n, opts.Start, opts.NumDays)
+	return durationDays * 24
+}
+
+// buildPollAnswers converts poll date choices into Discord native poll
+// answers.
+func buildPollAnswers(choices []Choice) []discordgo.PollAnswer {
 	answers := make([]discordgo.PollAnswer, 0, len(choices))
 	for _, choice := range choices {
 		answers = append(answers, discordgo.PollAnswer{
@@ -82,7 +84,35 @@ func NativePoll(session *discordgo.Session, interaction *discordgo.Interaction) 
 			},
 		})
 	}
-	durationHours := durationDays * 24
+	return answers
+}
+
+// buildNativePollResponse builds the interaction response that creates a
+// Discord native poll message.
+func buildNativePollResponse(title string, answers []discordgo.PollAnswer, durationHours int) *discordgo.InteractionResponse {
+	return &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Poll: &discordgo.Poll{
+				Question:         discordgo.PollMedia{Text: truncateRunes(title, pollQuestionMaxLength)},
+				Answers:          answers,
+				AllowMultiselect: true,
+				Duration:         durationHours,
+			},
+		},
+	}
+}
+
+func NativePoll(session pollSession, interaction *discordgo.Interaction) error {
+	i18n := GetI18n(interaction.Locale)
+	now := time.Now()
+	opts, err := parsePollOptions(interaction, i18n, now)
+	if err != nil {
+		return err
+	}
+	choices := getChoices(i18n, opts.Start, opts.NumDays)
+	answers := buildPollAnswers(choices)
+	durationHours := resolveDurationHours(opts.OptMap)
 	// A poll shouldn't outlive the scheduled event linked to it, so clamp the
 	// duration to the time remaining before the event's start (only relevant
 	// when an event will actually be created, i.e. not in a DM). eventStart is
@@ -93,18 +123,8 @@ func NativePoll(session *discordgo.Session, interaction *discordgo.Interaction) 
 		eventStart = resolveEventStartTime(opts.Start, opts.NumDays, now)
 		durationHours = clampPollDurationToEvent(durationHours, eventStart, now)
 	}
-	body := discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Poll: &discordgo.Poll{
-				Question:         discordgo.PollMedia{Text: truncateRunes(opts.Title, pollQuestionMaxLength)},
-				Answers:          answers,
-				AllowMultiselect: true,
-				Duration:         durationHours,
-			},
-		},
-	}
-	err = session.InteractionRespond(interaction, &body)
+	body := buildNativePollResponse(opts.Title, answers, durationHours)
+	err = session.InteractionRespond(interaction, body)
 	if err != nil {
 		log.Println(err)
 		return err

@@ -1,6 +1,7 @@
 package poll
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -373,4 +374,90 @@ func TestClampPollDurationToEvent(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestBuildGuildScheduledEventParams(t *testing.T) {
+	i18n := I18n{VotingPeriod: "(V)", PollMessage: "Msg"}
+	start := time.Date(2026, time.August, 21, 0, 0, 0, 0, time.UTC)
+	numDays := 3
+	messageURL := "https://discord.com/channels/guild-1/channel-1/message-1"
+	eventStart := time.Date(2026, time.August, 23, 9, 0, 0, 0, time.UTC)
+
+	params := buildGuildScheduledEventParams(i18n, start, numDays, "Test", messageURL, eventStart)
+
+	if params.Name != "(V)Test" {
+		t.Errorf("Name = %q, want %q", params.Name, "(V)Test")
+	}
+	wantDescription := "Msg: " + messageURL
+	if params.Description != wantDescription {
+		t.Errorf("Description = %q, want %q", params.Description, wantDescription)
+	}
+	if params.ScheduledStartTime == nil || !params.ScheduledStartTime.Equal(eventStart) {
+		t.Errorf("ScheduledStartTime = %v, want %v", params.ScheduledStartTime, eventStart)
+	}
+	// The final candidate day is Aug 21 + 2 days = Aug 23; the event should
+	// run through the end of that day.
+	wantEnd := time.Date(2026, time.August, 23, 23, 59, 59, 0, time.UTC)
+	if params.ScheduledEndTime == nil || !params.ScheduledEndTime.Equal(wantEnd) {
+		t.Errorf("ScheduledEndTime = %v, want %v", params.ScheduledEndTime, wantEnd)
+	}
+	if params.PrivacyLevel != discordgo.GuildScheduledEventPrivacyLevelGuildOnly {
+		t.Errorf("PrivacyLevel = %v, want %v", params.PrivacyLevel, discordgo.GuildScheduledEventPrivacyLevelGuildOnly)
+	}
+	if params.EntityType != discordgo.GuildScheduledEventEntityTypeExternal {
+		t.Errorf("EntityType = %v, want %v", params.EntityType, discordgo.GuildScheduledEventEntityTypeExternal)
+	}
+	if params.EntityMetadata == nil || params.EntityMetadata.Location != messageURL {
+		t.Errorf("EntityMetadata.Location = %v, want %q", params.EntityMetadata, messageURL)
+	}
+
+	t.Run("truncates a long title to Discord's event name limit", func(t *testing.T) {
+		longTitle := ""
+		for i := 0; i < discordEventNameMaxLength+10; i++ {
+			longTitle += "a"
+		}
+		params := buildGuildScheduledEventParams(i18n, start, numDays, longTitle, messageURL, eventStart)
+		if len([]rune(params.Name)) != discordEventNameMaxLength {
+			t.Errorf("Name length = %d, want %d", len([]rune(params.Name)), discordEventNameMaxLength)
+		}
+	})
+}
+
+func TestCreateScheduledEvent(t *testing.T) {
+	i18n := I18n{VotingPeriod: "(V)", PollMessage: "Msg"}
+	start := time.Date(2026, time.August, 21, 0, 0, 0, 0, time.UTC)
+	eventStart := time.Date(2026, time.August, 23, 0, 0, 0, 0, time.UTC)
+	messageURL := "https://discord.com/channels/guild-1/channel-1/message-1"
+
+	t.Run("delegates to GuildScheduledEventCreate with the built params and returns its result", func(t *testing.T) {
+		fake := &fakePollSession{guildScheduledEventCreateEvent: &discordgo.GuildScheduledEvent{ID: "evt-42"}}
+
+		got, err := createScheduledEvent(fake, "guild-1", i18n, start, 3, "Test", messageURL, eventStart)
+		if err != nil {
+			t.Fatalf("createScheduledEvent() error = %v", err)
+		}
+		if got.ID != "evt-42" {
+			t.Errorf("returned event ID = %q, want %q", got.ID, "evt-42")
+		}
+		if len(fake.guildScheduledEventCreateCalls) != 1 {
+			t.Fatalf("GuildScheduledEventCreate called %d times, want 1", len(fake.guildScheduledEventCreateCalls))
+		}
+		call := fake.guildScheduledEventCreateCalls[0]
+		if call.guildID != "guild-1" {
+			t.Errorf("guildID = %q, want %q", call.guildID, "guild-1")
+		}
+		if call.params.Name != "(V)Test" {
+			t.Errorf("params.Name = %q, want %q", call.params.Name, "(V)Test")
+		}
+	})
+
+	t.Run("propagates the error from GuildScheduledEventCreate", func(t *testing.T) {
+		wantErr := errors.New("event create failed")
+		fake := &fakePollSession{guildScheduledEventCreateErr: wantErr}
+
+		_, err := createScheduledEvent(fake, "guild-1", i18n, start, 3, "Test", messageURL, eventStart)
+		if err != wantErr {
+			t.Errorf("createScheduledEvent() error = %v, want %v", err, wantErr)
+		}
+	})
 }
