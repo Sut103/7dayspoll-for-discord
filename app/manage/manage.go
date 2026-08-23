@@ -3,7 +3,7 @@ package manage
 import (
 	"log"
 
-	"7DaysPoll/poll"
+	"7dayspoll/poll"
 
 	"github.com/bwmarrin/discordgo"
 )
