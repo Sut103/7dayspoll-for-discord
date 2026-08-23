@@ -1,4 +1,4 @@
-module 7DaysPoll
+module 7dayspoll
 
 go 1.25.0
 

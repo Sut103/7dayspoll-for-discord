@@ -1,8 +1,8 @@
 package bot
 
 import (
-	"7DaysPoll/manage"
-	"7DaysPoll/poll"
+	"7dayspoll/manage"
+	"7dayspoll/poll"
 	"fmt"
 	"log"
 	"os"

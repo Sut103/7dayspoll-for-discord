@@ -48,8 +48,8 @@ The classic embed-based poll with emoji reactions is still available as `/poll-c
 ### Setting Up the Development Environment
 1. Clone the repository:
    ```
-   git clone https://github.com/Sut103/7DaysPoll-for-Discord.git
-   cd 7DaysPoll-for-Discord
+   git clone https://github.com/Sut103/7dayspoll-for-discord.git
+   cd 7dayspoll-for-discord
    ```
 
 2. Create a `.env` file in the root directory with your Discord bot token:
@@ -94,8 +94,8 @@ This will create a Docker image optimized for arm64 architecture.
 1. Ensure you have Go 1.23 or later installed
 2. Clone the repository:
    ```bash
-   git clone https://github.com/Sut103/7DaysPoll-for-Discord.git
-   cd 7DaysPoll-for-Discord/app
+   git clone https://github.com/Sut103/7dayspoll-for-discord.git
+   cd 7dayspoll-for-discord/app
    ```
 
 3. Set your Discord bot token:
