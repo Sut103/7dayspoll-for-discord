@@ -13,6 +13,8 @@ func Register(session *discordgo.Session) error {
 	commands := []*discordgo.ApplicationCommand{
 		poll.GetNativePollCommand(),
 		poll.GetClassicPollCommand(),
+		poll.GetPollEndMessageCommand(),
+		poll.GetPollEndSlashCommand(),
 	}
 	for _, command := range commands {
 		_, err := session.ApplicationCommandCreate(session.State.User.ID, "", command)

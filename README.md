@@ -16,6 +16,7 @@ The bot can create polls with 2-7 potential dates starting from a specified date
 - Uses Discord's built-in poll feature for easy voting (multiple answers allowed)
 - Customizable poll duration (1-32 days)
 - Automatically creates a guild scheduled event linked to the poll
+- End a poll early at any time via the "End Poll" message command
 - Classic reaction-based voting is still available via `/poll-classic`
 
 ## How to use 7DaysPoll on your Discord server
@@ -37,6 +38,8 @@ You can combine these parameters as needed:
 - `/poll title:Game Night start-date:05/15 days:5 duration:7` - Creates a poll titled "Game Night" with 5 days starting from May 15th, open for 7 days
 
 The classic embed-based poll with emoji reactions is still available as `/poll-classic`. It supports the same `title`, `start-date`, and `days` parameters and automatically counts unique voters via reactions.
+
+To end a poll before its scheduled duration is up, right-click (or long-press on mobile) the poll message and choose **Apps → End Poll**. The same action is available as a slash command: `/poll-end message:[link or ID]` — start typing and matching poll titles from the current channel show up as suggestions, so you usually don't need to paste anything. Either way, only the member who created the poll, or a member with the "Manage Messages" permission, can end it.
 
 ## Development Environment
 
