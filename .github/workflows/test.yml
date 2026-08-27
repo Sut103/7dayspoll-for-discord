@@ -14,12 +14,12 @@ jobs:
         working-directory: app
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version-file: app/go.mod
       - name: Vet
         run: go vet ./...
       - name: Test
-        run: go test ./... -v
+        run: go test ./... -race -v
