@@ -65,6 +65,18 @@ The classic embed-based poll with emoji reactions is still available as `/poll-c
    go run .
    ```
 
+## Running Tests
+
+Run the test suite locally:
+
+```bash
+cd app
+go build -v ./...
+go test ./...
+```
+
+CI runs the build and the tests automatically on every pull request and on every push to `main`. As an extra guard, the CI test step adds `-race` (see `.github/workflows/test.yml`).
+
 ## Building with Docker
 
 To build the Docker image:
