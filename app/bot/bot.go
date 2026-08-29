@@ -27,10 +27,7 @@ const (
 	commandKindClassic = "classic"
 )
 
-// resolveCommandKind maps a Discord application command name to the kind of
-// poll it should trigger. It is a pure function with no dependency on
-// discordgo types, so it can be unit-tested in isolation from botHandler's
-// dispatch, which requires a live *discordgo.Session/*discordgo.InteractionCreate.
+// resolveCommandKind is pure: no discordgo dependency.
 func resolveCommandKind(name string) (kind string, ok bool) {
 	switch name {
 	case "poll":
