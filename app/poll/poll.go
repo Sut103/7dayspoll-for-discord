@@ -163,7 +163,7 @@ func clampPollDurationToEvent(durationHours int, eventStart, now time.Time) int 
 	return durationHours
 }
 
-func createScheduledEvent(session *discordgo.Session, guildID string, i18n I18n, start time.Time, numDays int, title string, messageURL string, eventStart time.Time) (*discordgo.GuildScheduledEvent, error) {
+func createScheduledEvent(session pollSession, guildID string, i18n I18n, start time.Time, numDays int, title string, messageURL string, eventStart time.Time) (*discordgo.GuildScheduledEvent, error) {
 	eventTitle := truncateRunes(i18n.VotingPeriod+title, discordEventNameMaxLength)
 
 	finalCandidateDayMidnight := eventStartTime(start, numDays)
