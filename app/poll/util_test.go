@@ -8,9 +8,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-// TestGetTimeZone pins down the locale-to-timezone mapping: Japanese maps to
-// Asia/Tokyo, every other locale (including the empty/unknown locale) falls
-// back to the process-local timezone.
 func TestGetTimeZone(t *testing.T) {
 	tests := []struct {
 		name string
@@ -45,9 +42,6 @@ func mustLoadLocation(t *testing.T, name string) *time.Location {
 	return loc
 }
 
-// TestGetI18n pins down the string sets returned for the two locales the bot
-// ships strings for, plus the fallback to the EnglishUS set for anything
-// else.
 func TestGetI18n(t *testing.T) {
 	enUS := I18n{
 		Weekdays:     []string{"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"},
@@ -99,9 +93,6 @@ func equalI18n(a, b I18n) bool {
 	return true
 }
 
-// TestTruncateRunes pins down that truncation is a no-op at/under maxLen,
-// truncates by rune count (not byte count) above it, and does not corrupt
-// multi-byte characters such as Japanese text.
 func TestTruncateRunes(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -150,9 +141,7 @@ func TestTruncateRunes(t *testing.T) {
 	}
 }
 
-// utf8ValidRunesRoundTrip verifies s round-trips cleanly through the rune
-// decoder, i.e. no truncated/invalid UTF-8 sequences (which would surface as
-// the replacement character U+FFFD after a byte-level cut mid-character).
+// A byte-level cut mid-character would surface as U+FFFD here.
 func utf8ValidRunesRoundTrip(s string) bool {
 	return !strings.ContainsRune(s, '�')
 }

@@ -1,17 +1,13 @@
 package poll
 
 import (
-	"reflect"
+	"slices"
 	"testing"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
 
-// ---- getDays ----------------------------------------------------------
-
-// TestGetDays pins down that getDays returns numDays consecutive calendar
-// days starting at (and including) day, preserving day's time-of-day.
 func TestGetDays(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -65,10 +61,6 @@ func TestGetDays(t *testing.T) {
 	}
 }
 
-// ---- getEmojis ---------------------------------------------------------
-
-// TestGetEmojis pins down the fixed 8-emoji list: keycap digits 1-7 followed
-// by the cross-mark "absence" emoji.
 func TestGetEmojis(t *testing.T) {
 	want := []string{
 		"1⃣", // 1️⃣ (digit + combining enclosing keycap)
@@ -83,21 +75,16 @@ func TestGetEmojis(t *testing.T) {
 
 	got := getEmojis()
 
-	if !reflect.DeepEqual(got, want) {
+	if !slices.Equal(got, want) {
 		t.Errorf("getEmojis() = %v, want %v", got, want)
 	}
 }
 
-// ---- getChoices ---------------------------------------------------------
-
-// TestGetChoices pins down that getChoices returns numDays weekday-labeled
-// choices followed by exactly one absence choice (numDays+1 total).
 func TestGetChoices(t *testing.T) {
 	i18n := I18n{
 		Weekdays: []string{"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"},
 		Absence:  "Absence",
 	}
-	// 2024-03-04 is a Monday.
 	start := time.Date(2024, time.March, 4, 0, 0, 0, 0, time.UTC)
 	numDays := 3
 
@@ -124,8 +111,6 @@ func TestGetChoices(t *testing.T) {
 	}
 }
 
-// ---- parsePollOptions ----------------------------------------------------
-
 func stringOption(name, value string) *discordgo.ApplicationCommandInteractionDataOption {
 	return &discordgo.ApplicationCommandInteractionDataOption{
 		Name:  name,
@@ -138,8 +123,7 @@ func intOption(name string, value int64) *discordgo.ApplicationCommandInteractio
 	return &discordgo.ApplicationCommandInteractionDataOption{
 		Name: name,
 		Type: discordgo.ApplicationCommandOptionInteger,
-		// discordgo decodes integer option values from JSON as float64;
-		// IntValue() asserts on that representation.
+		// IntValue() asserts on discordgo's float64 JSON decoding of integer options.
 		Value: float64(value),
 	}
 }
@@ -258,6 +242,11 @@ func TestParsePollOptions_StartDateSameAsTodayDoesNotRoll(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parsePollOptions returned unexpected error: %v", err)
 	}
+	// parsePollOptions takes its own time.Now() independently of `now` above;
+	// a midnight rollover between the two reads would make "today" ambiguous.
+	if after := time.Now().In(time.Local); after.Day() != now.Day() {
+		t.Skip("date changed mid-test; today-based expectation is no longer valid")
+	}
 
 	wantStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
 	if !got.Start.Equal(wantStart) {
@@ -279,8 +268,6 @@ func TestParsePollOptions_StartDatePastRollsToNextYear(t *testing.T) {
 		t.Fatalf("parsePollOptions returned unexpected error: %v", err)
 	}
 
-	// A date that's already in the past this year is assumed to mean "next
-	// occurrence of that date", i.e. next year.
 	wantStart := time.Date(now.Year()+1, yesterday.Month(), yesterday.Day(), 0, 0, 0, 0, time.Local)
 	if !got.Start.Equal(wantStart) {
 		t.Errorf("Start = %v, want %v (rolled forward to next year)", got.Start, wantStart)
@@ -303,31 +290,11 @@ func TestParsePollOptions_StartDateUnparseableFallsBackToToday(t *testing.T) {
 	}
 }
 
-// TestParsePollOptions_TimezoneErrorPropagation documents (rather than
-// exercises) the "GetTimeZone failure propagates as an error" behavior
-// required by issue #62.
-//
-// parsePollOptions does propagate a GetTimeZone error verbatim:
-//
-//	timezone, err := GetTimeZone(interaction.Locale)
-//	if err != nil {
-//	    return nil, err
-//	}
-//
-// However, GetTimeZone (util.go) can only fail via time.LoadLocation, and
-// its locale table only ever passes it the hardcoded, always-valid zone name
-// "Asia/Tokyo" (for discordgo.Japanese) or short-circuits to time.Local (nil
-// error) for every other locale. There is no black-box input to
-// parsePollOptions that makes GetTimeZone fail without either modifying
-// poll.go/util.go to allow injecting a fake timezone resolver, or mutating
-// the test host's system timezone database out from under the process
-// (which was deliberately avoided as unsafe/non-portable for a unit test).
-// This is flagged for the reviewer rather than silently skipped.
+// Skipped: GetTimeZone only ever gets a hardcoded-valid zone or falls back to
+// time.Local, so no input here can make it fail without changing source/system state.
 func TestParsePollOptions_TimezoneErrorPropagation(t *testing.T) {
-	t.Skip("GetTimeZone cannot be made to fail for any input reachable from parsePollOptions without modifying source or system state; see comment above")
+	t.Skip("GetTimeZone cannot fail for any input reachable from parsePollOptions; see comment above")
 }
-
-// ---- buildMessageURL / buildEventURL -------------------------------------
 
 func TestBuildMessageURL(t *testing.T) {
 	got := buildMessageURL("111", "222", "333")
@@ -345,10 +312,6 @@ func TestBuildEventURL(t *testing.T) {
 	}
 }
 
-// ---- eventStartTime -------------------------------------------------------
-
-// TestEventStartTime pins down that eventStartTime returns local midnight of
-// the final candidate day (start + numDays - 1), in start's location.
 func TestEventStartTime(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -389,11 +352,6 @@ func TestEventStartTime(t *testing.T) {
 	}
 }
 
-// ---- resolveEventStartTime -------------------------------------------------
-
-// TestResolveEventStartTime pins down both branches: the computed midnight
-// is used as-is when still in the future relative to now, and bumped to
-// now+1 minute when it has already passed.
 func TestResolveEventStartTime(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -435,11 +393,6 @@ func TestResolveEventStartTime(t *testing.T) {
 	}
 }
 
-// ---- clampPollDurationToEvent ----------------------------------------------
-
-// TestClampPollDurationToEvent pins down that the duration is floored to the
-// whole hours remaining before eventStart, never going below
-// minPollDurationHours (1), even when eventStart has already passed.
 func TestClampPollDurationToEvent(t *testing.T) {
 	now := time.Date(2024, time.June, 15, 0, 0, 0, 0, time.UTC)
 
