@@ -2,9 +2,7 @@ package poll
 
 import "github.com/bwmarrin/discordgo"
 
-// pollSession is the subset of *discordgo.Session's API that the poll
-// package depends on. Narrowing to an interface lets tests substitute a
-// hand-written fake instead of a real Discord connection.
+// pollSession narrows *discordgo.Session so tests can substitute a hand-written fake.
 type pollSession interface {
 	InteractionRespond(interaction *discordgo.Interaction, resp *discordgo.InteractionResponse, options ...discordgo.RequestOption) error
 	InteractionResponse(interaction *discordgo.Interaction, options ...discordgo.RequestOption) (*discordgo.Message, error)

@@ -11,11 +11,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-// ---- NativePoll -----------------------------------------------------------
-
-// TestNativePoll_DM_HappyPath pins down that in a DM (GuildID == ""), only
-// InteractionRespond is called, with the unclamped duration (no linked
-// scheduled event to clamp against), and NativePoll returns nil.
 func TestNativePoll_DM_HappyPath(t *testing.T) {
 	fake := &fakePollSession{}
 	interaction := newInteraction(discordgo.EnglishUS)
@@ -38,9 +33,6 @@ func TestNativePoll_DM_HappyPath(t *testing.T) {
 	}
 }
 
-// TestNativePoll_InteractionRespondError pins down that a failing
-// InteractionRespond is returned immediately, with no further calls made,
-// even when the interaction is guild-scoped.
 func TestNativePoll_InteractionRespondError(t *testing.T) {
 	wantErr := errors.New("interaction respond failed")
 	fake := &fakePollSession{interactionRespondErr: wantErr}
@@ -58,18 +50,12 @@ func TestNativePoll_InteractionRespondError(t *testing.T) {
 	}
 }
 
-// TestNativePoll_Guild_HappyPath pins down that a guild-scoped interaction
-// calls all four session methods in order, with the poll's Duration clamped
-// against the linked scheduled event's start time, and the follow-up message
-// linking to the created event.
 func TestNativePoll_Guild_HappyPath(t *testing.T) {
 	fake := &fakePollSession{
 		interactionResponseResult:       &discordgo.Message{ID: "msg-1"},
 		guildScheduledEventCreateResult: &discordgo.GuildScheduledEvent{ID: "event-1"},
 	}
-	// numDays=2 (the minimum reachable via the "days" option) puts the final
-	// candidate day at tomorrow, so the linked event's start is well under
-	// the 72h (3-day) default poll duration, forcing an actual clamp.
+	// days=2 puts the event within the default 72h duration, forcing an actual clamp.
 	interaction := newInteraction(discordgo.EnglishUS, intOption("days", 2))
 	interaction.GuildID = "guild-1"
 	interaction.ChannelID = "chan-1"
@@ -115,10 +101,6 @@ func TestNativePoll_Guild_HappyPath(t *testing.T) {
 	}
 }
 
-// TestNativePoll_InteractionResponseError pins down that a failing
-// InteractionResponse (fetching the just-created message, guild path only)
-// is returned, and neither GuildScheduledEventCreate nor
-// FollowupMessageCreate run.
 func TestNativePoll_InteractionResponseError(t *testing.T) {
 	wantErr := errors.New("interaction response failed")
 	fake := &fakePollSession{interactionResponseErr: wantErr}
@@ -136,10 +118,6 @@ func TestNativePoll_InteractionResponseError(t *testing.T) {
 	}
 }
 
-// TestNativePoll_GuildScheduledEventCreateError_IsSwallowed pins down that a
-// failure creating the guild scheduled event (surfaced through
-// createScheduledEvent) is logged and swallowed: NativePoll returns nil, and
-// FollowupMessageCreate does not run.
 func TestNativePoll_GuildScheduledEventCreateError_IsSwallowed(t *testing.T) {
 	fake := &fakePollSession{
 		interactionResponseResult:    &discordgo.Message{ID: "msg-1"},
@@ -159,9 +137,6 @@ func TestNativePoll_GuildScheduledEventCreateError_IsSwallowed(t *testing.T) {
 	}
 }
 
-// TestNativePoll_FollowupMessageCreateError_IsSwallowed pins down that a
-// failing follow-up message post is logged and swallowed: NativePoll still
-// returns nil.
 func TestNativePoll_FollowupMessageCreateError_IsSwallowed(t *testing.T) {
 	fake := &fakePollSession{
 		interactionResponseResult:       &discordgo.Message{ID: "msg-1"},
@@ -182,12 +157,6 @@ func TestNativePoll_FollowupMessageCreateError_IsSwallowed(t *testing.T) {
 	}
 }
 
-// ---- createScheduledEvent --------------------------------------------------
-
-// TestCreateScheduledEvent_Params pins down the exact
-// GuildScheduledEventParams built for the guild scheduled event: name
-// (VotingPeriod prefix + title, truncated to 100 runes), description,
-// scheduled start/end times, privacy level, entity type, and location.
 func TestCreateScheduledEvent_Params(t *testing.T) {
 	fake := &fakePollSession{
 		guildScheduledEventCreateResult: &discordgo.GuildScheduledEvent{ID: "event-1"},
@@ -230,8 +199,6 @@ func TestCreateScheduledEvent_Params(t *testing.T) {
 		t.Errorf("ScheduledStartTime = %v, want %v", got.ScheduledStartTime, eventStart)
 	}
 
-	// numDays=3 starting 2024-03-01 -> final candidate day is 2024-03-03;
-	// end time is 23:59:59 local time of that day.
 	wantEnd := time.Date(2024, time.March, 3, 23, 59, 59, 0, start.Location())
 	if got.ScheduledEndTime == nil || !got.ScheduledEndTime.Equal(wantEnd) {
 		t.Errorf("ScheduledEndTime = %v, want %v", got.ScheduledEndTime, wantEnd)

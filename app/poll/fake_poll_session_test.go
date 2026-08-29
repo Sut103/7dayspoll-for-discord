@@ -2,32 +2,24 @@ package poll
 
 import "github.com/bwmarrin/discordgo"
 
-// fakePollSession is a hand-written test double for pollSession. It records
-// call order and the arguments each method was called with, and lets tests
-// inject a canned result/error per method.
+// fakePollSession is a hand-written test double for pollSession.
 type fakePollSession struct {
 	calls []string
 
 	interactionRespondErr error
-	// interactionRespondArg captures the *discordgo.InteractionResponse
-	// passed to the most recent InteractionRespond call.
 	interactionRespondArg *discordgo.InteractionResponse
 
 	interactionResponseResult *discordgo.Message
 	interactionResponseErr    error
 
-	guildScheduledEventCreateResult *discordgo.GuildScheduledEvent
-	guildScheduledEventCreateErr    error
-	// guildScheduledEventCreateGuildID/Params capture the arguments passed
-	// to the most recent GuildScheduledEventCreate call.
+	guildScheduledEventCreateResult  *discordgo.GuildScheduledEvent
+	guildScheduledEventCreateErr     error
 	guildScheduledEventCreateGuildID string
 	guildScheduledEventCreateParams  *discordgo.GuildScheduledEventParams
 
 	followupMessageCreateResult *discordgo.Message
 	followupMessageCreateErr    error
-	// followupMessageCreateData captures the *discordgo.WebhookParams
-	// passed to the most recent FollowupMessageCreate call.
-	followupMessageCreateData *discordgo.WebhookParams
+	followupMessageCreateData   *discordgo.WebhookParams
 }
 
 func (f *fakePollSession) InteractionRespond(interaction *discordgo.Interaction, resp *discordgo.InteractionResponse, options ...discordgo.RequestOption) error {
