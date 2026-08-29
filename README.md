@@ -65,6 +65,20 @@ The classic embed-based poll with emoji reactions is still available as `/poll-c
    go run .
    ```
 
+## Running Tests
+
+> **Note:** Provisional section — this is a standalone placeholder PR for [unit-test-coverage epic #55](https://github.com/Sut103/7dayspoll-for-discord/issues/55) / issue #65, opened independently of the epic branch to avoid GitHub's Stacked-PR grouping. It documents the intended final state once the CI workflow (#60) and unit test suites (#61–#64) land; the commands below already work today, but this note will be removed once #65 is finalized against the merged epic branch.
+
+Run the test suite locally:
+
+```bash
+cd app
+go build -v ./...
+go test ./...
+```
+
+CI runs the same two commands automatically on every pull request and on every push to `main` (see `.github/workflows/test.yml`, added in #60).
+
 ## Building with Docker
 
 To build the Docker image:
