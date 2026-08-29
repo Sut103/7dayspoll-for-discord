@@ -22,18 +22,40 @@ func NewBot(token string) *Bot {
 	}
 }
 
+const (
+	commandKindNative  = "native"
+	commandKindClassic = "classic"
+)
+
+// resolveCommandKind maps a Discord application command name to the kind of
+// poll it should trigger. It is a pure function with no dependency on
+// discordgo types, so it can be unit-tested in isolation from botHandler's
+// dispatch, which requires a live *discordgo.Session/*discordgo.InteractionCreate.
+func resolveCommandKind(name string) (kind string, ok bool) {
+	switch name {
+	case "poll":
+		return commandKindNative, true
+	case "poll-classic":
+		return commandKindClassic, true
+	default:
+		return "", false
+	}
+}
+
 func botHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if i.Type != discordgo.InteractionApplicationCommand {
 		return
 	}
-	var err error
-	switch i.ApplicationCommandData().Name {
-	case "poll":
-		err = poll.NativePoll(s, i.Interaction)
-	case "poll-classic":
-		err = poll.ClassicPoll(s, i.Interaction)
-	default:
+	kind, ok := resolveCommandKind(i.ApplicationCommandData().Name)
+	if !ok {
 		return
+	}
+	var err error
+	switch kind {
+	case commandKindNative:
+		err = poll.NativePoll(s, i.Interaction)
+	case commandKindClassic:
+		err = poll.ClassicPoll(s, i.Interaction)
 	}
 	if err != nil {
 		log.Println(err)
