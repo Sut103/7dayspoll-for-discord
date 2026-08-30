@@ -22,18 +22,37 @@ func NewBot(token string) *Bot {
 	}
 }
 
+const (
+	commandKindNative  = "native"
+	commandKindClassic = "classic"
+)
+
+// resolveCommandKind is pure: no discordgo dependency.
+func resolveCommandKind(name string) (kind string, ok bool) {
+	switch name {
+	case "poll":
+		return commandKindNative, true
+	case "poll-classic":
+		return commandKindClassic, true
+	default:
+		return "", false
+	}
+}
+
 func botHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if i.Type != discordgo.InteractionApplicationCommand {
 		return
 	}
-	var err error
-	switch i.ApplicationCommandData().Name {
-	case "poll":
-		err = poll.NativePoll(s, i.Interaction)
-	case "poll-classic":
-		err = poll.ClassicPoll(s, i.Interaction)
-	default:
+	kind, ok := resolveCommandKind(i.ApplicationCommandData().Name)
+	if !ok {
 		return
+	}
+	var err error
+	switch kind {
+	case commandKindNative:
+		err = poll.NativePoll(s, i.Interaction)
+	case commandKindClassic:
+		err = poll.ClassicPoll(s, i.Interaction)
 	}
 	if err != nil {
 		log.Println(err)
