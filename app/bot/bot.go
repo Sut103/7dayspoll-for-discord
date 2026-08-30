@@ -72,7 +72,7 @@ func (b *Bot) Run() error {
 	}
 	defer s.Close()
 
-	manage.Register(s)
+	manage.Register(s, s.State.User.ID)
 
 	log.Println("=====start=====")
 	signalChan := make(chan os.Signal, 1)
