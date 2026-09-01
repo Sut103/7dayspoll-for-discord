@@ -290,12 +290,6 @@ func TestParsePollOptions_StartDateUnparseableFallsBackToToday(t *testing.T) {
 	}
 }
 
-// Skipped: GetTimeZone only ever gets a hardcoded-valid zone or falls back to
-// time.Local, so no input here can make it fail without changing source/system state.
-func TestParsePollOptions_TimezoneErrorPropagation(t *testing.T) {
-	t.Skip("GetTimeZone cannot fail for any input reachable from parsePollOptions; see comment above")
-}
-
 func TestBuildMessageURL(t *testing.T) {
 	got := buildMessageURL("111", "222", "333")
 	want := "https://discord.com/channels/111/222/333"

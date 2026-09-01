@@ -32,6 +32,8 @@ func GetTimeZone(lang discordgo.Locale) (*time.Location, error) {
 	if !ok {
 		return time.Local, nil
 	}
+	// Can fail without host tzdata (e.g. a minimal self-hosted container);
+	// too environment-dependent to reproduce in tests.
 	return time.LoadLocation(tz)
 }
 
