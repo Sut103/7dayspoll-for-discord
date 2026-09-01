@@ -70,7 +70,7 @@ func TestGetEmojis(t *testing.T) {
 		"5⃣",
 		"6⃣",
 		"7⃣",
-		"❌", // ❌
+		"❌",
 	}
 
 	got := getEmojis()
