@@ -56,7 +56,7 @@ func GetNativePollCommand() *discordgo.ApplicationCommand {
 	}
 }
 
-func NativePoll(session *discordgo.Session, interaction *discordgo.Interaction) error {
+func NativePoll(session pollSession, interaction *discordgo.Interaction) error {
 	i18n := GetI18n(interaction.Locale)
 	opts, err := parsePollOptions(interaction, i18n)
 	if err != nil {
