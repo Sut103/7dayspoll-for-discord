@@ -43,7 +43,7 @@ The classic embed-based poll with emoji reactions is still available as `/poll-c
 A poll normally closes when its duration runs out. To close it sooner, either:
 
 - Right-click (long-press on mobile) the poll message and choose **Apps → End Poll**
-- Run `/poll-end message:[link or ID]` — start typing and the unfinished polls in the current channel are offered as suggestions, so you rarely need to paste anything
+- Run `/poll-end message:[link or ID]` — start typing and this bot's unfinished polls in the current channel are offered as suggestions, so you rarely need to paste anything
 
 Only the member who created the poll, or a member with the "Manage Messages" permission, can end it. `/poll-end` only accepts a message in the channel you run it from.
 
