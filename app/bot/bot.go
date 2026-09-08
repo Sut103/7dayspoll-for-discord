@@ -23,8 +23,10 @@ func NewBot(token string) *Bot {
 }
 
 const (
-	commandKindNative  = "native"
-	commandKindClassic = "classic"
+	commandKindNative         = "native"
+	commandKindClassic        = "classic"
+	commandKindEndPollMessage = "end-poll-message"
+	commandKindEndPollSlash   = "end-poll-slash"
 )
 
 // resolveCommandKind is pure: no discordgo dependency.
@@ -34,12 +36,28 @@ func resolveCommandKind(name string) (kind string, ok bool) {
 		return commandKindNative, true
 	case "poll-classic":
 		return commandKindClassic, true
+	case "End Poll":
+		return commandKindEndPollMessage, true
+	case "poll-end":
+		return commandKindEndPollSlash, true
 	default:
 		return "", false
 	}
 }
 
+func supportsAutocomplete(name string) bool {
+	return name == "poll-end"
+}
+
 func botHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	if i.Type == discordgo.InteractionApplicationCommandAutocomplete {
+		if supportsAutocomplete(i.ApplicationCommandData().Name) {
+			if err := poll.Autocomplete(s, i.Interaction, s.State.User.ID); err != nil {
+				log.Println(err)
+			}
+		}
+		return
+	}
 	if i.Type != discordgo.InteractionApplicationCommand {
 		return
 	}
@@ -53,6 +71,10 @@ func botHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		err = poll.NativePoll(s, i.Interaction)
 	case commandKindClassic:
 		err = poll.ClassicPoll(s, i.Interaction)
+	case commandKindEndPollMessage:
+		err = poll.EndFromMessage(s, i.Interaction)
+	case commandKindEndPollSlash:
+		err = poll.EndFromSlash(s, i.Interaction)
 	}
 	if err != nil {
 		log.Println(err)
