@@ -20,6 +20,25 @@ type fakePollSession struct {
 	followupMessageCreateResult *discordgo.Message
 	followupMessageCreateErr    error
 	followupMessageCreateData   *discordgo.WebhookParams
+
+	interactionResponseEditResult *discordgo.Message
+	interactionResponseEditErr    error
+	interactionResponseEditData   *discordgo.WebhookEdit
+
+	channelMessageResult    *discordgo.Message
+	channelMessageErr       error
+	channelMessageChannelID string
+	channelMessageMessageID string
+
+	channelMessagesResult    []*discordgo.Message
+	channelMessagesErr       error
+	channelMessagesChannelID string
+	channelMessagesLimit     int
+
+	pollExpireResult    *discordgo.Message
+	pollExpireErr       error
+	pollExpireChannelID string
+	pollExpireMessageID string
 }
 
 func (f *fakePollSession) InteractionRespond(interaction *discordgo.Interaction, resp *discordgo.InteractionResponse, options ...discordgo.RequestOption) error {
@@ -53,6 +72,45 @@ func (f *fakePollSession) GuildScheduledEventCreate(guildID string, event *disco
 		return nil, f.guildScheduledEventCreateErr
 	}
 	return f.guildScheduledEventCreateResult, nil
+}
+
+func (f *fakePollSession) InteractionResponseEdit(interaction *discordgo.Interaction, newresp *discordgo.WebhookEdit, options ...discordgo.RequestOption) (*discordgo.Message, error) {
+	f.calls = append(f.calls, "InteractionResponseEdit")
+	f.interactionResponseEditData = newresp
+	if f.interactionResponseEditErr != nil {
+		return nil, f.interactionResponseEditErr
+	}
+	return f.interactionResponseEditResult, nil
+}
+
+func (f *fakePollSession) ChannelMessage(channelID, messageID string, options ...discordgo.RequestOption) (*discordgo.Message, error) {
+	f.calls = append(f.calls, "ChannelMessage")
+	f.channelMessageChannelID = channelID
+	f.channelMessageMessageID = messageID
+	if f.channelMessageErr != nil {
+		return nil, f.channelMessageErr
+	}
+	return f.channelMessageResult, nil
+}
+
+func (f *fakePollSession) ChannelMessages(channelID string, limit int, beforeID, afterID, aroundID string, options ...discordgo.RequestOption) ([]*discordgo.Message, error) {
+	f.calls = append(f.calls, "ChannelMessages")
+	f.channelMessagesChannelID = channelID
+	f.channelMessagesLimit = limit
+	if f.channelMessagesErr != nil {
+		return nil, f.channelMessagesErr
+	}
+	return f.channelMessagesResult, nil
+}
+
+func (f *fakePollSession) PollExpire(channelID, messageID string) (*discordgo.Message, error) {
+	f.calls = append(f.calls, "PollExpire")
+	f.pollExpireChannelID = channelID
+	f.pollExpireMessageID = messageID
+	if f.pollExpireErr != nil {
+		return nil, f.pollExpireErr
+	}
+	return f.pollExpireResult, nil
 }
 
 // compile-time check: fakePollSession must satisfy pollSession.
