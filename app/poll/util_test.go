@@ -145,3 +145,43 @@ func TestTruncateRunes(t *testing.T) {
 func utf8ValidRunesRoundTrip(s string) bool {
 	return !strings.ContainsRune(s, '�')
 }
+
+func TestGetI18nPollEndMessages(t *testing.T) {
+	messages := func(i18n I18n) map[string]string {
+		return map[string]string{
+			"PollNotFound":          i18n.PollNotFound,
+			"PollAlreadyEnded":      i18n.PollAlreadyEnded,
+			"PollEndNoPermission":   i18n.PollEndNoPermission,
+			"PollEndFailed":         i18n.PollEndFailed,
+			"PollEndSuccess":        i18n.PollEndSuccess,
+			"PollEndInvalidMessage": i18n.PollEndInvalidMessage,
+			"PollEndTargetNotFound": i18n.PollEndTargetNotFound,
+		}
+	}
+
+	locales := []discordgo.Locale{discordgo.EnglishUS, discordgo.Japanese, discordgo.Locale("xx-XX")}
+	for _, locale := range locales {
+		t.Run(string(locale), func(t *testing.T) {
+			for field, message := range messages(GetI18n(locale)) {
+				if message == "" {
+					t.Errorf("%s is empty for locale %q", field, locale)
+				}
+			}
+		})
+	}
+
+	english := messages(GetI18n(discordgo.EnglishUS))
+	japanese := messages(GetI18n(discordgo.Japanese))
+	for field, message := range japanese {
+		if message == english[field] {
+			t.Errorf("%s is not localized: japanese and english are both %q", field, message)
+		}
+	}
+
+	fallback := messages(GetI18n(discordgo.Locale("xx-XX")))
+	for field, message := range fallback {
+		if message != english[field] {
+			t.Errorf("%s falls back to %q, want the english %q", field, message, english[field])
+		}
+	}
+}
