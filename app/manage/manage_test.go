@@ -19,8 +19,8 @@ func TestRegister_CreatesNativeThenClassicCommands(t *testing.T) {
 		t.Fatalf("Register() returned unexpected error: %v", err)
 	}
 
-	if len(fake.createCalls) != 2 {
-		t.Fatalf("expected 2 ApplicationCommandCreate calls, got %d", len(fake.createCalls))
+	if len(fake.createCalls) != 4 {
+		t.Fatalf("expected 4 ApplicationCommandCreate calls, got %d", len(fake.createCalls))
 	}
 
 	nativeCmd := poll.GetNativePollCommand()
@@ -162,5 +162,24 @@ func TestDelete_MidLoopDeleteFails_ReturnsErrorAndStopsRemaining(t *testing.T) {
 	}
 	if len(fake.deleteCalls) != 2 {
 		t.Fatalf("expected 2 ApplicationCommandDelete calls (third should be skipped), got %d", len(fake.deleteCalls))
+	}
+}
+
+func TestRegister_IncludesPollEndCommands(t *testing.T) {
+	fake := &fakeCommandSession{}
+
+	if err := Register(fake, testAppID); err != nil {
+		t.Fatalf("Register() returned unexpected error: %v", err)
+	}
+
+	registered := make(map[string]bool, len(fake.createCalls))
+	for _, call := range fake.createCalls {
+		registered[call.cmd.Name] = true
+	}
+
+	for _, want := range []string{poll.EndMessageCommand().Name, poll.EndSlashCommand().Name} {
+		if !registered[want] {
+			t.Errorf("command %q was not registered (registered: %v)", want, registered)
+		}
 	}
 }
